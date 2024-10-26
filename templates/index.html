@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Inspection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Product Inspection System</h1>
+
+        <div id="upload-container">
+            <h2>Upload Image</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="image-input" name="image" accept=".png, .jpg, .jpeg">
+                <button type="submit" id="process-btn">Process Image</button>
+            </form>
+        </div>
+
+        <div id="results-container" style="display: none;">
+            <h2>Processed Image</h2>
+            <img id="processed-image" src="" alt="Processed Image">
+
+            <h2>Results</h2>
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Confidence</th>
+                        <th>Expiry Date</th>
+                        <th>Is Damaged</th>
+                        <th>Freshness</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <button id="download-excel">Download Excel</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#upload-form').on('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#processed-image').attr('src', 'data:image/jpeg;base64,' + response.processed_image);
+
+                        var tableBody = $('#results-table tbody');
+                        tableBody.empty();
+                        response.results.forEach(function(result) {
+                            tableBody.append(
+                                '<tr>' +
+                                '<td>' + result.Product + '</td>' +
+                                '<td>' + result.Confidence + '</td>' +
+                                '<td>' + result.Expiry_Date + '</td>' +
+                                '<td>' + result.Is_Damaged + '</td>' +
+                                '<td>' + result.Freshness + '</td>' +
+                                '<td>' + result.Count + '</td>' +
+                                '</tr>'
+                            );
+                        });
+
+                        $('#download-excel').data('filename', response.excel_file);
+                        $('#results-container').show();
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Error processing image: ' + xhr.responseJSON.error);
+                    }
+                });
+            });
+
+            $('#download-excel').on('click', function() {
+                var filename = $(this).data('filename');
+                window.location.href = '/download/' + filename;
+            });
+        });
+    </script>
+</body>
+</html>
